@@ -159,108 +159,38 @@ export default function CheckoutPage() {
         ? '0' + phoneDigits.slice(3)
         : phoneDigits;
 
-      // 1. Create Order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert([{
-          order_number: orderNumber,
-          user_id: user?.id || null,
+      // 1–3. Create Order, Items, and Customer via server-side API (bypasses RLS)
+      const checkoutRes = await fetch('/api/storefront/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderNumber,
+          trackingNumber,
+          userId: user?.id || null,
           email: shippingData.email,
           phone: normalizedPhone,
-          status: 'pending',
-          payment_status: 'pending',
-          currency: 'GHS',
-          subtotal: subtotal,
-          tax_total: tax,
-          shipping_total: shippingCost,
-          discount_total: 0,
-          total: total,
-          shipping_method: deliveryMethod,
-          payment_method: paymentMethod,
-          shipping_address: shippingData,
-          billing_address: shippingData, // Using same for now
-          metadata: {
-            guest_checkout: !user,
-            first_name: shippingData.firstName,
-            last_name: shippingData.lastName,
-            tracking_number: trackingNumber
-          }
-        }])
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      // 2. Create Order Items (with UUID validation)
-      // Helper to check if string is a valid UUID
-      const isValidUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      
-      // Build order items, resolving slugs to UUIDs if needed
-      const orderItems = [];
-      
-      // Batch-fetch product metadata (for preorder_shipping etc.)
-      const productIds = cart.map(item => item.id).filter(id => isValidUUID(id));
-      const { data: productsData } = productIds.length > 0
-        ? await supabase.from('products').select('id, metadata').in('id', productIds)
-        : { data: [] };
-      const productMetaMap = new Map((productsData || []).map((p: any) => [p.id, p.metadata]));
-      
-      for (const item of cart) {
-        let productId = item.id;
-        
-        // If id is not a valid UUID, it might be a slug - try to resolve it
-        if (!isValidUUID(productId)) {
-          const { data: product } = await supabase
-            .from('products')
-            .select('id, metadata')
-            .or(`slug.eq.${productId},id.eq.${productId}`)
-            .single();
-          
-          if (product) {
-            productId = product.id;
-            productMetaMap.set(product.id, product.metadata);
-          } else {
-            throw new Error(`Product not found: ${item.name}. Please remove it from your cart and try again.`);
-          }
-        }
-        
-        const prodMeta = productMetaMap.get(productId);
-        
-        orderItems.push({
-          order_id: order.id,
-          product_id: productId,
-          product_name: item.name,
-          variant_name: item.variant,
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.price * item.quantity,
-          metadata: {
+          subtotal,
+          tax,
+          shippingCost,
+          total,
+          deliveryMethod,
+          paymentMethod,
+          shippingData,
+          cart: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            variant: item.variant || null,
+            quantity: item.quantity,
+            price: item.price,
             image: item.image,
             slug: item.slug,
-            preorder_shipping: prodMeta?.preorder_shipping || null
-          }
-        });
-      }
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      // Note: Stock reduction happens in mark_order_paid when payment is confirmed
-
-      // 3. Upsert Customer Record (for both guest and registered users)
-      const fullName = `${shippingData.firstName} ${shippingData.lastName}`.trim();
-      await supabase.rpc('upsert_customer_from_order', {
-        p_email: shippingData.email,
-        p_phone: shippingData.phone,
-        p_full_name: fullName,
-        p_first_name: shippingData.firstName,
-        p_last_name: shippingData.lastName,
-        p_user_id: user?.id || null,
-        p_address: shippingData
+          })),
+        }),
       });
+
+      const checkoutResult = await checkoutRes.json();
+      if (!checkoutRes.ok) throw new Error(checkoutResult.error || 'Failed to place order');
+      const order = checkoutResult.order;
 
       // 4. Handle Payment Redirects or Completion
       if (paymentMethod === 'moolre') {
