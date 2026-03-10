@@ -643,19 +643,27 @@ export default function POSPage() {
                 region: guestDetails.region, pos_sale: true
             };
 
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .insert([{
+            const orderItemsPayload = cart.map(item => ({
+                product_id: item.id,
+                product_name: item.name,
+                variant_name: item.variant || null,
+                quantity: item.cartQuantity,
+                unit_price: item.price,
+                total_price: item.price * item.cartQuantity * (1 - (item.discount || 0) / 100),
+                metadata: { image: item.image, pos_sale: true, discount_pct: item.discount || 0 }
+            }));
+
+            const res = await fetch('/api/admin/pos/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
                     order_number: orderNumber,
-                    user_id: null,
                     email: customerEmail,
                     phone: customerPhone,
                     status: isCashOrCard ? 'processing' : 'pending',
                     payment_status: isCashOrCard ? 'paid' : 'pending',
-                    currency: 'GHS',
                     subtotal: cartSubtotal,
-                    tax_total: 0,
-                    shipping_total: 0,
                     discount_total: totalDiscount,
                     total: grandTotal,
                     shipping_method: deliveryMethod,
@@ -668,25 +676,16 @@ export default function POSPage() {
                         last_name: addressData.lastName,
                         phone: customerPhone,
                         cashier: cashierName || undefined,
-                    }
-                }])
-                .select()
-                .single();
+                    },
+                    items: orderItemsPayload,
+                    mark_paid: isCashOrCard,
+                }),
+            });
 
-            if (orderError) throw orderError;
-
-            const orderItems = cart.map(item => ({
-                order_id: order.id,
-                product_id: item.id,
-                product_name: item.name,
-                quantity: item.cartQuantity,
-                unit_price: item.price,
-                total_price: item.price * item.cartQuantity * (1 - item.discount / 100),
-                metadata: { image: item.image, pos_sale: true, discount_pct: item.discount || 0 }
-            }));
-
-            const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-            if (itemsError) throw itemsError;
+            const apiData = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(apiData.error || 'Failed to create order');
+            const order = apiData.order;
+            if (!order) throw new Error('No order returned');
 
             // Upsert Customer
             const hasRealEmail = customerEmail && customerEmail !== 'pos-walkin@store.local';
@@ -710,15 +709,6 @@ export default function POSPage() {
             }
 
             if (isCashOrCard) {
-                try {
-                    await supabase.rpc('mark_order_paid', {
-                        order_ref: orderNumber,
-                        moolre_ref: `POS-${paymentMethod.toUpperCase()}-${Date.now()}`
-                    });
-                } catch (stockErr) {
-                    console.error('Stock reduction error:', stockErr);
-                }
-
                 const receiptData = {
                     orderNumber, items: cart, subtotal: cartSubtotal,
                     discount: totalDiscount, total: grandTotal,

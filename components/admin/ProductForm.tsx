@@ -204,6 +204,37 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
         setCustomSize('');
     };
 
+    const editSize = (oldSize: string, newSize: string) => {
+        const trimmed = newSize.trim();
+        if (!trimmed || trimmed === oldSize) return;
+        if (selectedSizes.includes(trimmed)) return; // avoid duplicate
+        setSelectedSizes(prev => prev.map(s => s === oldSize ? trimmed : s));
+        setVariantData(prev => {
+            const next: Record<string, { price: string; stock: string; sku: string; image_url?: string }> = {};
+            Object.entries(prev).forEach(([key, val]) => {
+                const [color, size] = key.split('|||');
+                next[size === oldSize ? buildVariantKey(color, trimmed) : key] = val;
+            });
+            return next;
+        });
+    };
+
+    const editColor = (oldName: string, newName: string, newHex?: string) => {
+        const trimmed = newName.trim();
+        if (!trimmed || trimmed === oldName) return;
+        if (selectedColors.some(c => c.name.toLowerCase() === trimmed.toLowerCase())) return;
+        const hex = newHex || selectedColors.find(c => c.name === oldName)?.hex || '#888888';
+        setSelectedColors(prev => prev.map(c => c.name === oldName ? { name: trimmed, hex } : c));
+        setVariantData(prev => {
+            const next: Record<string, { price: string; stock: string; sku: string; image_url?: string }> = {};
+            Object.entries(prev).forEach(([key, val]) => {
+                const [color, size] = key.split('|||');
+                next[color === oldName ? buildVariantKey(trimmed, size) : key] = val;
+            });
+            return next;
+        });
+    };
+
     // Images
     const [images, setImages] = useState<any[]>(initialData?.product_images || []);
     const [uploading, setUploading] = useState(false);
@@ -958,7 +989,10 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
                                             <span key={color.name} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm shadow-sm">
                                                 <span className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: color.hex }}></span>
                                                 {color.name}
-                                                <button onClick={() => toggleColor(color)} className="text-gray-400 hover:text-red-500 ml-1">
+                                                <button type="button" onClick={() => { const v = prompt('Edit color name:', color.name); if (v != null && v.trim()) editColor(color.name, v.trim()); }} className="text-gray-400 hover:text-gray-700 ml-0.5" title="Edit name">
+                                                    <i className="ri-pencil-line text-sm"></i>
+                                                </button>
+                                                <button type="button" onClick={() => toggleColor(color)} className="text-gray-400 hover:text-red-500 ml-0.5">
                                                     <i className="ri-close-line text-sm"></i>
                                                 </button>
                                             </span>
@@ -1028,7 +1062,10 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
                                         {selectedSizes.map(size => (
                                             <span key={size} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full text-sm shadow-sm font-medium">
                                                 {size}
-                                                <button onClick={() => toggleSize(size)} className="text-gray-400 hover:text-red-500 ml-1">
+                                                <button type="button" onClick={() => { const v = prompt('Edit option name:', size); if (v != null && v.trim()) editSize(size, v.trim()); }} className="text-gray-400 hover:text-gray-700 ml-0.5" title="Edit name">
+                                                    <i className="ri-pencil-line text-sm"></i>
+                                                </button>
+                                                <button type="button" onClick={() => toggleSize(size)} className="text-gray-400 hover:text-red-500 ml-0.5">
                                                     <i className="ri-close-line text-sm"></i>
                                                 </button>
                                             </span>

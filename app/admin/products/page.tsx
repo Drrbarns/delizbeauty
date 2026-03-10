@@ -10,6 +10,7 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [sortBy, setSortBy] = useState('newest');
   const [searchQuery, setSearchQuery] = useState('');
+  const [stockFilter, setStockFilter] = useState<'out_of_stock' | 'low_stock' | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
@@ -120,9 +121,17 @@ export default function ProductsPage() {
 
   const filteredProducts = products.filter(product => {
     const term = searchQuery.toLowerCase();
-    return product.name.toLowerCase().includes(term) ||
+    const matchesSearch = product.name.toLowerCase().includes(term) ||
       (product.sku && product.sku.toLowerCase().includes(term)) ||
       (product.category && product.category.toLowerCase().includes(term));
+    if (!matchesSearch) return false;
+    if (stockFilter === 'out_of_stock') return (product.quantity ?? 0) === 0;
+    if (stockFilter === 'low_stock') {
+      const threshold = product.metadata?.low_stock_threshold ?? 5;
+      const qty = product.quantity ?? 0;
+      return qty > 0 && qty < threshold;
+    }
+    return true;
   });
 
   return (
@@ -151,22 +160,40 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+        <button
+          type="button"
+          onClick={() => setStockFilter(null)}
+          className={`text-left rounded-xl border-2 p-4 transition-colors ${stockFilter === null ? 'bg-gray-50 border-gray-900' : 'bg-white border-gray-200 hover:border-gray-300'}`}
+        >
           <p className="text-sm text-gray-600 mb-1">Total Products</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-        </div>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter(null)}
+          className={`text-left rounded-xl border-2 p-4 transition-colors ${stockFilter === null ? 'bg-gray-50 border-gray-900' : 'bg-white border-gray-200 hover:border-gray-300'}`}
+        >
           <p className="text-sm text-gray-600 mb-1">Active</p>
           <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
-        </div>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter(prev => prev === 'low_stock' ? null : 'low_stock')}
+          className={`text-left rounded-xl border-2 p-4 transition-colors cursor-pointer ${stockFilter === 'low_stock' ? 'bg-amber-50 border-amber-600' : 'bg-white border-gray-200 hover:border-amber-300'}`}
+        >
           <p className="text-sm text-gray-600 mb-1">Low Stock</p>
           <p className="text-2xl font-bold text-amber-700">{stats.lowStock}</p>
-        </div>
-        <div className="bg-white rounded-xl border-2 border-gray-200 p-4">
+          {stockFilter === 'low_stock' && <p className="text-xs text-amber-700 mt-1">Showing low stock only</p>}
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter(prev => prev === 'out_of_stock' ? null : 'out_of_stock')}
+          className={`text-left rounded-xl border-2 p-4 transition-colors cursor-pointer ${stockFilter === 'out_of_stock' ? 'bg-red-50 border-red-600' : 'bg-white border-gray-200 hover:border-red-300'}`}
+        >
           <p className="text-sm text-gray-600 mb-1">Out of Stock</p>
           <p className="text-2xl font-bold text-red-700">{stats.outOfStock}</p>
-        </div>
+          {stockFilter === 'out_of_stock' && <p className="text-xs text-red-700 mt-1">Showing out of stock only</p>}
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">

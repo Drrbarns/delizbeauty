@@ -219,7 +219,7 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
       id: product.id,
       name: product.name,
       price: activePrice,
-      image: product.images[0],
+      image: selectedVariant?.image_url || product.images[0],
       quantity: quantity,
       variant: variantLabel,
       slug: product.slug,

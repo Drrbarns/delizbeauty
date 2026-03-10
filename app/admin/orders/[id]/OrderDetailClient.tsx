@@ -399,9 +399,9 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                 {order.order_items?.map((item: any) => (
                   <div key={item.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
                     <div className="w-20 h-20 bg-white rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center relative">
-                      {item.products?.product_images?.[0]?.url ? (
+                      {(item.metadata?.image || item.products?.product_images?.[0]?.url) ? (
                         <img
-                          src={item.products.product_images[0].url}
+                          src={item.metadata?.image || item.products?.product_images[0].url}
                           alt={item.product_name}
                           className="w-full h-full object-cover"
                         />

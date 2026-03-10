@@ -52,6 +52,8 @@ export default function PrintInventoryPage() {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    const totalValue = products.reduce((sum, p) => sum + (Number(p.price) || 0) * (Number(p.stock) ?? 0), 0);
+
     return (
         <div className="p-8 max-w-6xl mx-auto bg-white min-h-screen text-black">
             <style dangerouslySetInnerHTML={{
@@ -74,6 +76,7 @@ export default function PrintInventoryPage() {
                 <div className="text-right">
                     <p className="font-medium">Date: {currentDate}</p>
                     <p className="font-medium">Total Products: {products.length}</p>
+                    <p className="font-bold text-lg mt-1">Total Value: GH₵ {totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
             </div>
 
@@ -103,6 +106,7 @@ export default function PrintInventoryPage() {
                         <th className="p-3 border border-gray-300 font-bold w-40">Category</th>
                         <th className="p-3 border border-gray-300 font-bold w-24 text-right">Price</th>
                         <th className="p-3 border border-gray-300 font-bold w-20 text-center">Stock</th>
+                        <th className="p-3 border border-gray-300 font-bold w-28 text-right">Value</th>
                         <th className="p-3 border border-gray-300 font-bold w-24 text-center">Status</th>
                     </tr>
                 </thead>
@@ -123,13 +127,18 @@ export default function PrintInventoryPage() {
                             <td className="p-3 border border-gray-300 font-semibold text-sm">{product.name}</td>
                             <td className="p-3 border border-gray-300 text-sm font-mono text-gray-700">{product.sku || '-'}</td>
                             <td className="p-3 border border-gray-300 text-sm">{product.category || '-'}</td>
-                            <td className="p-3 border border-gray-300 text-right font-medium whitespace-nowrap">GH₵ {product.price.toFixed(2)}</td>
-                            <td className="p-3 border border-gray-300 text-center font-bold">{product.stock}</td>
+                            <td className="p-3 border border-gray-300 text-right font-medium whitespace-nowrap">GH₵ {(Number(product.price) || 0).toFixed(2)}</td>
+                            <td className="p-3 border border-gray-300 text-center font-bold">{product.stock ?? 0}</td>
+                            <td className="p-3 border border-gray-300 text-right font-semibold whitespace-nowrap">GH₵ {((Number(product.price) || 0) * (Number(product.stock) ?? 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             <td className="p-3 border border-gray-300 text-center text-xs uppercase font-semibold tracking-wider">{product.status}</td>
                         </tr>
                     ))}
                 </tbody>
             </table>
+
+            <div className="mt-6 p-4 bg-gray-100 border-2 border-gray-400 rounded print:bg-gray-100">
+                <p className="text-right font-bold text-lg">Total Inventory Value: GH₵ {totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
 
             <div className="mt-8 text-center text-sm font-medium border-t-2 border-black pt-4">
                 <p>End of Inventory Report &mdash; Generated from Deliz Beauty Tools Admin Panel</p>
