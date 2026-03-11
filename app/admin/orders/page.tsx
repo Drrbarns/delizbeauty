@@ -76,7 +76,7 @@ export default function AdminOrdersPage() {
 
       // Extract unique product names for filter
       const productNames = new Set<string>();
-      ordersData?.forEach(o => {
+      ordersData?.forEach((o: any) => {
         o.order_items?.forEach((item: any) => {
           if (item.product_name) productNames.add(item.product_name);
         });
