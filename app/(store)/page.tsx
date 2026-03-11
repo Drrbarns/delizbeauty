@@ -40,7 +40,23 @@ export default function Home() {
       subheadline: 'Transform your daily routine into a spa-like experience. Fast shipping nationwide on all premium skincare products.',
       primaryButtonText: 'Explore Skincare',
       primaryButtonLink: '/shop?category=skincare',
-    }
+    },
+    {
+      image: '/hero-nail-colors.png',
+      tagline: 'Nail Collection',
+      headline: 'Over 100 Shades — Find Your Perfect Nail Color',
+      subheadline: 'Explore our premium gel polish collection. From subtle nudes to bold hues, we have every color for every mood.',
+      primaryButtonText: 'Shop Nail Colors',
+      primaryButtonLink: '/shop?category=nail',
+    },
+    {
+      image: '/hero-nail-lamp.png',
+      tagline: 'Pro Equipment',
+      headline: 'Professional UV/LED Nail Lamps for Perfect Results',
+      subheadline: 'Cure your gel nails in seconds with our high-powered salon-grade lamps. Fast, even curing every time.',
+      primaryButtonText: 'Shop Equipment',
+      primaryButtonLink: '/shop?category=equipment',
+    },
   ];
 
   useEffect(() => {
