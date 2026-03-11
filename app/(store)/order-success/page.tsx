@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
@@ -22,16 +21,10 @@ function OrderSuccessContent() {
       }
 
       try {
-        const { data: orderData, error } = await supabase
-          .from('orders')
-          .select(`
-                    *,
-                    order_items (*)
-                `)
-          .eq('order_number', orderNumber)
-          .single();
-
-        if (error) throw error;
+        const res = await fetch(`/api/storefront/orders/${encodeURIComponent(orderNumber)}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Order not found');
+        const orderData = json.order;
         setOrder(orderData);
 
         // If redirected from payment and order is still pending, try to verify
@@ -55,12 +48,10 @@ function OrderSuccessContent() {
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Re-fetch order to check if callback already updated it
-    const { data: refreshed } = await supabase
-      .from('orders')
-      .select('*, order_items (*)')
-      .eq('order_number', orderNum)
-      .single();
-    
+    const refreshRes = await fetch(`/api/storefront/orders/${encodeURIComponent(orderNum)}`);
+    const refreshJson = await refreshRes.json();
+    const refreshed = refreshJson.order;
+
     if (refreshed?.payment_status === 'paid') {
       setOrder(refreshed);
       setVerifying(false);
@@ -81,12 +72,9 @@ function OrderSuccessContent() {
       
       if (result.success && result.payment_status === 'paid') {
         // Re-fetch full order data
-        const { data: updated } = await supabase
-          .from('orders')
-          .select('*, order_items (*)')
-          .eq('order_number', orderNum)
-          .single();
-        if (updated) setOrder(updated);
+        const updatedRes = await fetch(`/api/storefront/orders/${encodeURIComponent(orderNum)}`);
+        const updatedJson = await updatedRes.json();
+        if (updatedJson.order) setOrder(updatedJson.order);
       }
     } catch (err) {
       console.error('Payment verification failed:', err);
