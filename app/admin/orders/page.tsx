@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import ProductSalesStats from './ProductSalesStats';
 
 interface Order {
@@ -67,30 +66,11 @@ export default function AdminOrdersPage() {
     try {
       setLoading(true);
 
-      // Fetch orders with related data
-      const { data: ordersData, error } = await supabase
-        .from('orders')
-        .select(`
-          id,
-          order_number,
-          email,
-          total,
-          status,
-          payment_status,
-          payment_method,
-          shipping_method,
-          created_at,
-          phone,
-          shipping_address,
-          metadata,
-          order_items (
-            quantity,
-            product_name
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      // Fetch orders via server-side API (bypasses RLS)
+      const res = await fetch('/api/admin/orders', { credentials: 'include' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch orders');
+      const ordersData = json.orders;
 
       setOrders(ordersData || []);
 

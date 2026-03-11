@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import FraudDetectionAlert from '@/components/FraudDetectionAlert';
+import { supabase } from '@/lib/supabase';
 
 interface OrderDetailClientProps {
   orderId: string;
@@ -52,67 +52,13 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      // Try to fetch by ID or order_number
-      let query = supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            id,
-            product_id,
-            product_name,
-            variant_name,
-            sku,
-            quantity,
-            unit_price,
-            total_price,
-            metadata,
-            products (
-              product_images (url)
-            )
-          )
-        `)
-        .eq('id', orderId);
-
-      let { data, error } = await query.single();
-
-      if (error && error.code === 'PGRST116') {
-        // Not found by ID, try order_number
-        const { data: dataByNum, error: errorByNum } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            order_items (
-              id,
-              product_id,
-              product_name,
-              variant_name,
-              sku,
-              quantity,
-              unit_price,
-              total_price,
-              metadata,
-              products (
-                product_images (url)
-              )
-            )
-          `)
-          .eq('order_number', orderId)
-          .single();
-
-        if (dataByNum) {
-          data = dataByNum;
-          error = null;
-        } else {
-          error = errorByNum;
-        }
-      }
-
-      if (error) throw error;
+      const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, { credentials: 'include' });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Order not found');
+      const data = json.order;
       setOrder(data);
       setTrackingNumber(data.metadata?.tracking_number || '');
       setAdminNotes(data.notes || '');
-
     } catch (err: any) {
       console.error('Error fetching order:', err);
       setError('Failed to load order details');
@@ -126,17 +72,18 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
       setStatusUpdating(true);
       const statusToUpdate = newStatus || order.status;
 
-      const { error } = await supabase
-        .from('orders')
-        .update({
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           status: statusToUpdate,
           notes: adminNotes,
-          metadata: {
-            ...order.metadata,
-            tracking_number: trackingNumber
-          }
-        })
-        .eq('id', order.id);
+          metadata: { ...order.metadata, tracking_number: trackingNumber },
+        }),
+      });
+      const json = await res.json();
+      const error = res.ok ? null : { message: json.error };
 
       if (error) throw error;
 
