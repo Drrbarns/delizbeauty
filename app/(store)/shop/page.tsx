@@ -159,7 +159,7 @@ function ShopContent() {
       <PageHero
         title="Shop All Products"
         subtitle="Discover our curated collection of premium goods"
-        image="/shop.jpeg"
+        image="/hero-nail-lamp.png"
       />
 
       {/* Mobile Filter Toggle */}
