@@ -86,7 +86,22 @@ export async function POST(req: Request) {
             }
         };
 
-        console.log('[Payment] Initiating for order:', orderRef, '| Amount from DB:', amount, '| Callback:', payload.callback);
+        // Save uniqueRef on the order so the verify endpoint can use it later
+        try {
+            const { data: currentOrder } = await supabaseAdmin
+                .from('orders')
+                .select('metadata')
+                .eq('order_number', orderRef)
+                .single();
+            await supabaseAdmin
+                .from('orders')
+                .update({ metadata: { ...(currentOrder?.metadata || {}), moolre_unique_ref: uniqueRef, moolre_init_at: new Date().toISOString() } })
+                .eq('order_number', orderRef);
+        } catch (metaErr) {
+            console.warn('[Payment] Could not save uniqueRef to order:', metaErr);
+        }
+
+        console.log('[Payment] Initiating for order:', orderRef, '| Amount from DB:', amount, '| UniqueRef:', uniqueRef, '| Callback:', payload.callback);
 
         const response = await fetch('https://api.moolre.com/embed/link', {
             method: 'POST',

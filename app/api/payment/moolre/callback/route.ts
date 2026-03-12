@@ -75,14 +75,13 @@ export async function POST(req: Request) {
         // ============================================================
         const expectedSecret = process.env.MOOLRE_CALLBACK_SECRET;
         if (expectedSecret) {
-            // If we have a configured secret, the callback MUST match it
             if (!body.secret || body.secret !== expectedSecret) {
-                console.error('[Callback] Secret mismatch or missing! Rejecting callback.');
+                console.error('[Callback] SECRET MISMATCH — expected:', expectedSecret?.substring(0, 8) + '...', '| received:', String(body.secret || 'NONE').substring(0, 8) + '...');
                 return NextResponse.json({ success: false, message: 'Invalid callback signature' }, { status: 403 });
             }
+            console.log('[Callback] Secret verified OK');
         } else {
-            // Log a warning if no secret is configured — this should be fixed
-            console.warn('[Callback] WARNING: MOOLRE_CALLBACK_SECRET not configured. Callback origin cannot be verified.');
+            console.warn('[Callback] MOOLRE_CALLBACK_SECRET not configured — skipping secret check. Set this in Vercel env vars.');
         }
 
         // ============================================================
@@ -224,13 +223,22 @@ export async function POST(req: Request) {
             // Payment failed
             console.log(`[Callback] Payment FAILED for ${merchantOrderRef} | Status: ${apiStatus} | TX: ${txStatus}`);
 
+            // Fetch existing metadata first so we don't wipe it
+            const { data: failedOrder } = await supabaseAdmin
+                .from('orders')
+                .select('metadata')
+                .eq('order_number', merchantOrderRef)
+                .single();
+
             await supabaseAdmin
                 .from('orders')
                 .update({
                     payment_status: 'failed',
                     metadata: {
+                        ...(failedOrder?.metadata || {}),
                         moolre_reference: moolreReference,
-                        failure_reason: body.message || 'Payment failed'
+                        failure_reason: body.message || 'Payment failed',
+                        failed_at: new Date().toISOString(),
                     }
                 })
                 .eq('order_number', merchantOrderRef);

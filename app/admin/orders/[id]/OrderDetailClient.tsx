@@ -137,6 +137,32 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
   };
 
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [reverifying, setReverifying] = useState(false);
+  const [reverifyResult, setReverifyResult] = useState<string | null>(null);
+
+  const handleReverifyPayment = async () => {
+    if (!order) return;
+    setReverifying(true);
+    setReverifyResult(null);
+    try {
+      const res = await fetch('/api/payment/moolre/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber: order.order_number }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setReverifyResult('✅ Payment verified! Order has been marked as paid.');
+        fetchOrderDetails();
+      } else {
+        setReverifyResult(`⚠️ ${json.message || 'Could not verify payment with Moolre.'}`);
+      }
+    } catch (err) {
+      setReverifyResult('❌ Network error. Please try again.');
+    } finally {
+      setReverifying(false);
+    }
+  };
 
   const handleMarkAsPaid = async () => {
     if (!order || order.payment_status === 'paid') return;
@@ -572,6 +598,25 @@ export default function OrderDetailClient({ orderId }: OrderDetailClientProps) {
                     <><i className="ri-checkbox-circle-line"></i> Mark as Paid</>
                   )}
                 </button>
+              )}
+              {/* Re-verify with Moolre API */}
+              {order.payment_status !== 'paid' && (
+                <div className="mt-3">
+                  <button
+                    onClick={handleReverifyPayment}
+                    disabled={reverifying}
+                    className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  >
+                    {reverifying ? (
+                      <><i className="ri-loader-4-line animate-spin"></i> Checking with Moolre...</>
+                    ) : (
+                      <><i className="ri-refresh-line"></i> Re-verify Payment with Moolre</>
+                    )}
+                  </button>
+                  {reverifyResult && (
+                    <p className="mt-2 text-xs text-center text-gray-600">{reverifyResult}</p>
+                  )}
+                </div>
               )}
               {order.payment_status === 'paid' && order.metadata?.manually_marked_paid && (
                 <p className="mt-3 text-xs text-gray-400 text-center">Manually marked as paid</p>

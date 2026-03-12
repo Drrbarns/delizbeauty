@@ -82,6 +82,12 @@ export async function POST(req: Request) {
         }
 
         try {
+            // Use the unique ref stored on the order (set when payment link was created).
+            // Moolre tracks payments by the unique externalref (e.g. ORD-xxx-R1234567890),
+            // NOT the plain order number — so we must use the stored ref.
+            const moolreUniqueRef = order.metadata?.moolre_unique_ref || orderNumber;
+            console.log('[Verify] Querying Moolre with ref:', moolreUniqueRef);
+
             const checkResponse = await fetch('https://api.moolre.com/embed/status', {
                 method: 'POST',
                 headers: {
@@ -89,7 +95,7 @@ export async function POST(req: Request) {
                     'X-API-USER': process.env.MOOLRE_API_USER,
                     'X-API-PUBKEY': process.env.MOOLRE_API_PUBKEY
                 },
-                body: JSON.stringify({ externalref: orderNumber })
+                body: JSON.stringify({ externalref: moolreUniqueRef })
             });
 
             const checkResult = await checkResponse.json();
