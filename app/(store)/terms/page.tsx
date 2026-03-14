@@ -173,7 +173,7 @@ export default function TermsPage() {
           <section className="mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">6. Returns & Refunds</h2>
             <p className="text-gray-600 leading-relaxed mb-4">
-              We offer a 14-day return policy for most products. See our Returns Policy for complete details on eligibility, process, and conditions.
+              We deliver within 24 - 48 hours across Ghana. Contact us for any order issues or product exchanges. See our Returns page for complete details.
             </p>
             <p className="text-gray-600 leading-relaxed">
               Refunds are processed within 5-7 business days of receiving your return. Refunds are issued to the original payment method.

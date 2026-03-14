@@ -82,12 +82,12 @@ const articles: any = {
       <h3>Step 4: Get Your Refund</h3>
       <p>Once we receive your return, we'll process it within 3-5 business days. Your refund will be issued to your original payment method.</p>
       
-      <h2>Return Policy Details</h2>
+      <h2>Delivery &amp; Support</h2>
       <ul>
-        <li>You have 30 days from delivery to start a return</li>
-        <li>Items must be unused and in original packaging</li>
-        <li>Return shipping is free for defective items</li>
-        <li>Standard returns have a small shipping fee</li>
+        <li>Delivers within 24 - 48 hours nationwide</li>
+        <li>Pickup available at our Madina, Ritz Junction shop</li>
+        <li>Contact us for any issues with your order</li>
+        <li>Exchange or replacement for defective items</li>
       </ul>
       
       <h2>Exchange Instead?</h2>

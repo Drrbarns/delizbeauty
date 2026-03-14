@@ -59,8 +59,8 @@ export default function FAQsPage() {
     },
     {
       category: 'returns',
-      question: 'What is your return policy?',
-      answer: 'We offer a 14-day return policy for unused items in original packaging. Simply initiate a return from your account, print the return label, and ship it back. Refunds are processed within 5-7 business days after we receive the item.'
+      question: 'How fast is delivery?',
+      answer: 'We deliver within 24 - 48 hours across Ghana. Orders placed before 3 PM are typically dispatched the same day. You can also choose to pick up your order at our shop in Madina, Ritz Junction, Accra.'
     },
     {
       category: 'returns',
@@ -262,9 +262,9 @@ export default function FAQsPage() {
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <i className="ri-arrow-go-back-line text-2xl text-gray-900"></i>
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Returns Policy</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delivery Info</h3>
             <p className="text-gray-600 leading-relaxed">
-              Understand our return process, timeframes, and refund policy
+              We deliver nationwide in 24 - 48 hours. Pickup also available.
             </p>
           </Link>
 

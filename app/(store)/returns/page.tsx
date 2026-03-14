@@ -148,12 +148,12 @@ export default function ReturnsPortalPage() {
                 <div className="flex items-start space-x-3">
                   <i className="ri-information-line text-xl text-blue-700 mt-0.5"></i>
                   <div className="text-sm text-blue-700">
-                    <p className="font-semibold mb-1">Return Policy Highlights</p>
+                    <p className="font-semibold mb-1">Delivery &amp; Returns</p>
                     <ul className="space-y-1">
-                      <li>• Returns accepted within 30 days of delivery</li>
-                      <li>• Items must be unused with original tags</li>
-                      <li>• Free return shipping for defective items</li>
-                      <li>• Refunds processed within 5-7 business days</li>
+                      <li>• Delivers within 24 - 48 hours nationwide</li>
+                      <li>• Pickup available at our Madina, Ritz Junction shop</li>
+                      <li>• Contact us for any issues with your order</li>
+                      <li>• Exchange or replacement for defective items</li>
                     </ul>
                   </div>
                 </div>
