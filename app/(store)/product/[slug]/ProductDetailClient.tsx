@@ -614,19 +614,12 @@ export default function ProductDetailClient({ slug }: { slug: string }) {
                           Min. order: {product.moq} units
                         </span>
                       )}
-                      {activeStock > 10 && (
-                        <span className="text-gray-600 font-medium text-sm">
-                          <i className="ri-checkbox-circle-line mr-1 text-gray-700"></i>
-                          {activeStock} in stock
+                      {activeStock > 0 ? (
+                        <span className="text-green-600 font-medium text-sm">
+                          <i className="ri-checkbox-circle-line mr-1"></i>
+                          In Stock
                         </span>
-                      )}
-                      {activeStock > 0 && activeStock <= 10 && (
-                        <span className="text-amber-600 font-medium text-sm">
-                          <i className="ri-error-warning-line mr-1"></i>
-                          Only {activeStock} left in stock
-                        </span>
-                      )}
-                      {activeStock === 0 && (
+                      ) : (
                         <span className="text-red-600 font-medium">
                           <i className="ri-close-circle-line mr-1"></i>
                           Out of Stock
