@@ -601,11 +601,7 @@ export default function POSPage() {
             const tendered = parseFloat(amountTendered || '0');
             if (tendered < grandTotal) return 'Insufficient amount tendered';
         }
-        if (!selectedCustomer) {
-            const hasName = guestDetails.firstName.trim() || guestDetails.lastName.trim();
-            const hasContact = guestDetails.email.trim() || guestDetails.phone.trim();
-            if (!hasName && !hasContact) return 'Please enter customer name or contact info';
-        }
+        // Customer info is optional for POS walk-in sales
         if (deliveryMethod === 'doorstep') {
             if (!guestDetails.address.trim()) return 'Delivery address is required';
             if (!guestDetails.city.trim()) return 'City is required for delivery';
@@ -662,7 +658,7 @@ export default function POSPage() {
                     order_number: orderNumber,
                     email: customerEmail,
                     phone: customerPhone,
-                    status: isCashOrCard ? 'processing' : 'pending',
+                    status: isCashOrCard ? 'completed' : 'pending',
                     payment_status: isCashOrCard ? 'paid' : 'pending',
                     subtotal: cartSubtotal,
                     discount_total: totalDiscount,

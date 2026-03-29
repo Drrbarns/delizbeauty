@@ -129,6 +129,11 @@ export async function POST(request: Request) {
           order_ref: order_number,
           moolre_ref: `POS-${(payment_method || 'cash').toUpperCase()}-${Date.now()}`,
         });
+        // POS sales are fulfilled immediately — mark as completed
+        await supabaseAdmin
+          .from('orders')
+          .update({ status: 'completed' })
+          .eq('order_number', order_number);
       } catch (e) {
         console.error('mark_order_paid error:', e);
       }
