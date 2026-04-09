@@ -13,6 +13,39 @@ function ShopContent() {
   usePageTitle('Shop All Products');
   const searchParams = useSearchParams();
 
+  const resolveCategorySlug = (rawCategory: string, list: any[]) => {
+    if (!rawCategory || !Array.isArray(list) || list.length === 0) return rawCategory;
+
+    const safeDecode = (value: string) => {
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return value;
+      }
+    };
+
+    const candidates = Array.from(
+      new Set(
+        [rawCategory, safeDecode(rawCategory), rawCategory.replace(/\+/g, ' '), safeDecode(rawCategory).replace(/\+/g, ' ')]
+          .map((v) => v.trim())
+          .filter(Boolean)
+      )
+    );
+
+    const match = list.find((category: any) => {
+      const slug = String(category?.slug || '').trim();
+      const name = String(category?.name || '').trim();
+      return candidates.some((candidate) =>
+        slug === candidate ||
+        name === candidate ||
+        slug.toLowerCase() === candidate.toLowerCase() ||
+        name.toLowerCase() === candidate.toLowerCase()
+      );
+    });
+
+    return match?.slug || rawCategory;
+  };
+
   // State
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([{ id: 'all', name: 'All Products', count: 0 }]);
@@ -34,10 +67,16 @@ function ShopContent() {
     const sort = searchParams.get('sort');
     const search = searchParams.get('search');
 
-    if (category) setSelectedCategory(category);
+    if (category) {
+      const resolvedCategory = resolveCategorySlug(category, categories);
+      setSelectedCategory((prev) => (prev === resolvedCategory ? prev : resolvedCategory));
+    } else {
+      setSelectedCategory((prev) => (prev === 'all' ? prev : 'all'));
+    }
+
     if (sort) setSortBy(sort);
     // Search is handled in the fetch function via searchParams directly or we could add a state for it
-  }, [searchParams]);
+  }, [searchParams, categories]);
 
   // Fetch Categories from cached API
   useEffect(() => {

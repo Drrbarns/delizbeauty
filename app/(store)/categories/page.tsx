@@ -54,7 +54,7 @@ export default async function CategoriesPage() {
             {categories.map((category) => (
               <Link
                 key={category.id}
-                href={`/shop?category=${category.slug}`}
+                href={{ pathname: '/shop', query: { category: category.slug } }}
                 className="group relative flex flex-col bg-white rounded-[2rem] overflow-hidden cursor-pointer border border-black/[0.03] shadow-[0_8px_30px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)]"
               >
                 <div className="relative h-64">
