@@ -5,6 +5,13 @@ import { escapeHtml } from '@/lib/sanitize';
 const resend = new Resend(process.env.RESEND_API_KEY || 'missing_api_key');
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@standardecom.com';
 const EMAIL_FROM = process.env.EMAIL_FROM || 'Deliz Beauty Tools <noreply@delizbeautytools.com>';
+const DEFAULT_ADMIN_SMS_RECIPIENTS = [
+    '0278549831',
+    '0205771442',
+    '0547321035',
+    '0546662069',
+    '0203963624',
+];
 const BRAND = {
     name: 'Deliz Beauty Tools',
     color: '#171717',
@@ -84,6 +91,16 @@ ${notes.map(n => `<p style="color:#78350f;margin:3px 0;font-size:13px;">${n}</p>
 function maskPhone(phone: string): string {
     if (!phone || phone.length < 6) return '***';
     return phone.slice(0, 4) + '****' + phone.slice(-2);
+}
+
+function getAdminSmsRecipients(): string[] {
+    const fromEnv = (process.env.ADMIN_SMS_RECIPIENTS || '')
+        .split(/[,\n]/)
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+    const source = fromEnv.length > 0 ? fromEnv : DEFAULT_ADMIN_SMS_RECIPIENTS;
+    return Array.from(new Set(source.map((value) => value.replace(/\s+/g, ''))));
 }
 
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
@@ -292,7 +309,21 @@ ${emailButton('View Order in Admin', `${baseUrl}/admin/orders/${id}`)}
         html: adminEmailHtml
     });
 
-    // 3. SMS to Customer (if phone exists)
+    // 3. SMS to Admin numbers (payment/order confirmation alert)
+    const adminSmsRecipients = getAdminSmsRecipients();
+    if (adminSmsRecipients.length > 0) {
+        const adminSmsMessage = `New paid order #${order_number || id}. Customer: ${name}. Total: GH₵${Number(total).toFixed(2)}. View: ${baseUrl}/admin/orders/${id}`;
+        await Promise.all(
+            adminSmsRecipients.map((adminPhone) =>
+                sendSMS({
+                    to: adminPhone,
+                    message: adminSmsMessage,
+                })
+            )
+        );
+    }
+
+    // 4. SMS to Customer (if phone exists)
     if (phone) {
         const smsMessage = trackingNumber
             ? `Hi ${name}, your order #${order_number || id} is confirmed! Tracking: ${trackingNumber}. Track here: ${trackingUrl}${shippingNotesSms}`
