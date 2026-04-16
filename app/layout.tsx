@@ -83,20 +83,11 @@ export const metadata: Metadata = {
     title: "Deliz Beauty Tools | Premium Beauty Essentials in Ghana",
     description: "Ghana's trusted destination for premium beauty essentials. Lash, hair, nail, spa & skincare. Madina, Accra. Nationwide delivery.",
     siteName: "Deliz Beauty Tools",
-    images: [
-      {
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Deliz Beauty Tools - Premium Beauty Essentials",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Deliz Beauty Tools | Premium Beauty Essentials in Ghana",
     description: "Ghana's trusted destination for premium beauty essentials. Nationwide delivery.",
-    images: ["/og-image.jpg"],
     creator: "@delizbeautytools",
   },
   alternates: {
