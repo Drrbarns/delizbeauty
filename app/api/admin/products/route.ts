@@ -48,7 +48,23 @@ async function requireAdmin(request: Request): Promise<NextResponse | null> {
   return null;
 }
 
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/300?text=No+Image';
+// Inline SVG placeholder served as a data URI. This avoids depending on a
+// third-party image host (which can be slow/blocked on mobile networks and
+// also gets intercepted by the PWA service worker) for products that have
+// not had an image uploaded yet.
+const PLACEHOLDER_IMAGE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">' +
+      '<rect width="160" height="160" fill="#f3f4f6"/>' +
+      '<g fill="none" stroke="#9ca3af" stroke-width="2">' +
+        '<rect x="32" y="40" width="96" height="72" rx="6"/>' +
+        '<path d="M40 96l24-22 18 16 14-12 24 22"/>' +
+        '<circle cx="58" cy="62" r="5"/>' +
+      '</g>' +
+      '<text x="80" y="134" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#9ca3af" text-anchor="middle">No image</text>' +
+    '</svg>'
+  );
 
 /**
  * GET /api/admin/products

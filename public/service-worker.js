@@ -1,5 +1,9 @@
-// Deliz Beauty Tools - Service Worker v3.0
-const CACHE_VERSION = 'sl-v3.0';
+// Deliz Beauty Tools - Service Worker v4.1
+// v4.0 (2026-05-13): force-flush all stale caches after Supabase self-host migration
+// v4.1: image strategy switched to stale-while-revalidate; never serve a fake "Image
+//       unavailable" SVG with a 200 status (the previous behaviour fooled <img onError>
+//       and made post-migration thumbnails look permanently broken).
+const CACHE_VERSION = 'sl-v4.1';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${CACHE_VERSION}`;
 const IMAGE_CACHE = `images-${CACHE_VERSION}`;
@@ -34,7 +38,7 @@ async function trimCache(cacheName, maxItems) {
 
 // Install: pre-cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing v3.0...');
+  console.log(`[SW] Installing ${CACHE_VERSION}...`);
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -51,7 +55,7 @@ self.addEventListener('install', (event) => {
 
 // Activate: clean old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating v3.0...');
+  console.log(`[SW] Activating ${CACHE_VERSION}...`);
   event.waitUntil(
     caches.keys()
       .then((keys) => {
@@ -86,30 +90,44 @@ self.addEventListener('fetch', (event) => {
   // Skip admin routes
   if (url.pathname.startsWith('/admin')) return;
 
-  // Strategy: Images - Cache First (long-lived)
+  // Strategy: Images - Stale-While-Revalidate
+  // - Serves cached image instantly when present (fast paint, works offline).
+  // - ALWAYS refetches in the background and replaces the cached entry, so a
+  //   transient network failure on one visit can never poison the cache forever.
+  // - If both cache and network fail, propagate the network error to the
+  //   browser (do NOT return a fake 200 SVG). That lets the page's own
+  //   <img onError> handler show its own placeholder.
   if (
     request.destination === 'image' ||
-    url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/) ||
-    url.hostname.includes('supabase.co') && url.pathname.includes('/storage/')
+    url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/i) ||
+    (url.hostname.includes('supabase') && url.pathname.includes('/storage/'))
   ) {
     event.respondWith(
-      caches.open(IMAGE_CACHE).then((cache) => {
-        return cache.match(request).then((cached) => {
-          if (cached) return cached;
-          return fetch(request).then((response) => {
-            if (response.ok) {
-              cache.put(request, response.clone());
-              trimCache(IMAGE_CACHE, IMAGE_CACHE_LIMIT);
+      caches.open(IMAGE_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        const networkPromise = fetch(request)
+          .then((response) => {
+            // Only cache real successful, non-opaque responses.
+            // Opaque (no-cors) and error responses are skipped so a single bad
+            // fetch never poisons the cache.
+            if (response && response.ok && response.type !== 'opaque' && response.type !== 'error') {
+              cache.put(request, response.clone()).catch(() => {});
+              trimCache(IMAGE_CACHE, IMAGE_CACHE_LIMIT).catch(() => {});
             }
             return response;
-          }).catch(() => {
-            // Return a placeholder for failed images
-            return new Response(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="sans-serif" font-size="14" text-anchor="middle" x="100" y="105">Image unavailable</text></svg>',
-              { headers: { 'Content-Type': 'image/svg+xml' } }
-            );
-          });
-        });
+          })
+          .catch(() => null);
+
+        if (cached) {
+          // Fire-and-forget refresh in the background; user gets the cached one now.
+          networkPromise.catch(() => {});
+          return cached;
+        }
+        const fresh = await networkPromise;
+        if (fresh) return fresh;
+        // No cache, no network: let the browser render its native broken-image
+        // state so the <img onError> handler in our UI can take over.
+        return Response.error();
       })
     );
     return;

@@ -4,7 +4,22 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
-const PLACEHOLDER_IMAGE = 'https://via.placeholder.com/300?text=No+Image';
+// Inline SVG placeholder. Kept local (no third-party request, no SW interception)
+// so a thumbnail without an uploaded image always shows a clean "No image" tile,
+// even on flaky mobile networks.
+const PLACEHOLDER_IMAGE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">' +
+      '<rect width="160" height="160" fill="#f3f4f6"/>' +
+      '<g fill="none" stroke="#9ca3af" stroke-width="2">' +
+        '<rect x="32" y="40" width="96" height="72" rx="6"/>' +
+        '<path d="M40 96l24-22 18 16 14-12 24 22"/>' +
+        '<circle cx="58" cy="62" r="5"/>' +
+      '</g>' +
+      '<text x="80" y="134" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#9ca3af" text-anchor="middle">No image</text>' +
+    '</svg>'
+  );
 
 export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -330,10 +345,16 @@ export default function ProductsPage() {
                       <div className="flex items-center space-x-3">
                         <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                           <img
-                            src={product.image}
+                            src={product.image || PLACEHOLDER_IMAGE}
                             alt={product.name}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }}
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement;
+                              if (img.src !== PLACEHOLDER_IMAGE) img.src = PLACEHOLDER_IMAGE;
+                            }}
                           />
                         </div>
                         <div>
@@ -395,10 +416,16 @@ export default function ProductsPage() {
                   />
                   <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-3 border border-gray-200">
                     <img
-                      src={product.image}
+                      src={product.image || PLACEHOLDER_IMAGE}
                       alt={product.name}
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER_IMAGE; }}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        if (img.src !== PLACEHOLDER_IMAGE) img.src = PLACEHOLDER_IMAGE;
+                      }}
                     />
                   </div>
                 </div>
