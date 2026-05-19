@@ -550,26 +550,29 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+        // pb-28 on mobile so the sticky save bar never covers the last form fields
+        <div className="space-y-6 pb-28 lg:pb-0">
+            {/* Header: stacks on mobile so the Save button is always reachable */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center space-x-4 min-w-0">
                     <Link
                         href="/admin/products"
-                        className="w-10 h-10 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                        className="w-10 h-10 shrink-0 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
                     >
                         <i className="ri-arrow-left-line text-xl text-gray-700"></i>
                     </Link>
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
                             {isEditMode ? 'Edit Product' : 'Add New Product'}
                         </h1>
-                        <p className="text-gray-600 mt-1">
+                        <p className="text-gray-600 mt-1 text-sm sm:text-base">
                             {isEditMode ? 'Update product information and settings' : 'Create a new product for your catalog'}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                {/* Desktop / tablet action buttons. On mobile we use the sticky bar below. */}
+                <div className="hidden sm:flex items-center space-x-3 shrink-0">
                     {isEditMode && initialData?.slug && (
                         <Link
                             href={`/product/${initialData.slug}`}
@@ -581,6 +584,7 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
                         </Link>
                     )}
                     <button
+                        type="button"
                         onClick={handleSubmit}
                         disabled={loading}
                         className={`px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors whitespace-nowrap cursor-pointer flex items-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
@@ -598,6 +602,38 @@ export default function ProductForm({ initialData, isEditMode = false }: Product
                         )}
                     </button>
                 </div>
+            </div>
+
+            {/* Mobile sticky save bar — always visible, can never be pushed off-screen */}
+            <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 px-4 py-3 flex items-center gap-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+                {isEditMode && initialData?.slug && (
+                    <Link
+                        href={`/product/${initialData.slug}`}
+                        target="_blank"
+                        className="flex-1 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold text-center"
+                    >
+                        <i className="ri-eye-line mr-2"></i>
+                        Preview
+                    </Link>
+                )}
+                <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className={`flex-1 px-4 py-3 bg-gray-900 text-white rounded-lg font-semibold flex items-center justify-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                    {loading ? (
+                        <>
+                            <i className="ri-loader-4-line animate-spin mr-2"></i>
+                            Saving...
+                        </>
+                    ) : (
+                        <>
+                            <i className="ri-save-line mr-2"></i>
+                            {isEditMode ? 'Save Changes' : 'Create Product'}
+                        </>
+                    )}
+                </button>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

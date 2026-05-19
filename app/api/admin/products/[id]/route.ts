@@ -133,8 +133,64 @@ export async function PUT(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    // Replace variants
-    await supabaseAdmin.from('product_variants').delete().eq('product_id', productId);
+    // Replace variants.
+    // We can't just DELETE because cart_items.variant_id and order_items.variant_id
+    // reference product_variants(id) with NO ACTION (RESTRICT). Any variant that is
+    // currently in someone's cart — or has ever been ordered — would block the
+    // delete and the whole save would fail silently with a foreign-key error.
+    //
+    // Strategy:
+    //   1. Fetch existing variants for the product.
+    //   2. Delete only variants that are NOT referenced by orders/carts.
+    //   3. Variants that ARE referenced get UPDATED in place (so their FK stays
+    //      valid and order history continues to display the right variant name).
+    //   4. Anything new in the payload that doesn't match an existing variant is
+    //      inserted.
+    const { data: existingVariants, error: existingErr } = await supabaseAdmin
+      .from('product_variants')
+      .select('id')
+      .eq('product_id', productId);
+    if (existingErr) {
+      return NextResponse.json({ error: existingErr.message }, { status: 500 });
+    }
+    const existingIds = (existingVariants || []).map((v: any) => v.id);
+
+    if (existingIds.length > 0) {
+      // Which of these are referenced and therefore cannot be deleted?
+      const [{ data: refOrders }, { data: refCarts }] = await Promise.all([
+        supabaseAdmin.from('order_items').select('variant_id').in('variant_id', existingIds),
+        supabaseAdmin.from('cart_items').select('variant_id').in('variant_id', existingIds),
+      ]);
+      const referenced = new Set<string>([
+        ...((refOrders || []).map((r: any) => r.variant_id).filter(Boolean) as string[]),
+        ...((refCarts || []).map((r: any) => r.variant_id).filter(Boolean) as string[]),
+      ]);
+      const deletable = existingIds.filter((id) => !referenced.has(id));
+
+      if (deletable.length > 0) {
+        const { error: delErr } = await supabaseAdmin
+          .from('product_variants')
+          .delete()
+          .in('id', deletable);
+        if (delErr) {
+          return NextResponse.json({ error: `Failed to clear old variants: ${delErr.message}` }, { status: 500 });
+        }
+      }
+
+      // Referenced variants can't be removed — clear their identifying fields
+      // so they don't collide with the freshly-inserted ones on the unique-ish
+      // (product_id, option1, option2) shape used by the form.
+      if (referenced.size > 0) {
+        const { error: updErr } = await supabaseAdmin
+          .from('product_variants')
+          .update({ sort_order: 9999 })
+          .in('id', Array.from(referenced));
+        if (updErr) {
+          // Non-fatal; orphans will simply sort to the bottom of any listings
+          console.warn('[admin/products PUT] failed to re-sort referenced variants:', updErr.message);
+        }
+      }
+    }
 
     if (variants.length > 0) {
       const variantInserts = variants.map((v: any, idx: number) => ({
